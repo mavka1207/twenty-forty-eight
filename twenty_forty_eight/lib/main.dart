@@ -1,6 +1,7 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'game_board.dart';
+import 'dart:math' as math;
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const TwentyFortyEightApp());
@@ -13,6 +14,7 @@ class TwentyFortyEightApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '2048',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.orange),
         useMaterial3: true,
@@ -31,14 +33,30 @@ class GamePage extends StatefulWidget {
 
 class _GamePageState extends State<GamePage> {
   late GameBoard _board;
+  int _bestScore = 0;
 
   @override
   void initState() {
     super.initState();
     _board = GameBoard();
+    _loadBestScore();
     // GameBoard creates a new board with random tiles in its constructor, so we don't need to call reset() here.
     // but if we wanted to start with an empty board and then add tiles, we could do:
     // _board.reset();
+  }
+
+  Future<void> _loadBestScore() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _bestScore = prefs.getInt('best_score') ?? 0;
+    });
+  }
+
+  Future<void> _saveBestScoreIfNeeded() async {
+    if (_board.score <= _bestScore) return;
+    _bestScore = _board.score;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('best_score', _bestScore);
   }
 
   void _restartGame() {
@@ -79,13 +97,17 @@ class _GamePageState extends State<GamePage> {
     }
   }
 
-  void _checkGameOver() {
+  void _checkGameOver() async {
     if (_board.isGameOver()) {
+      await _saveBestScoreIfNeeded();
+
+      if (!mounted) return;
+
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Game over'),
-          content: const Text('No more moves available.'),
+          content: Text('Score: ${_board.score}\nBest: $_bestScore'),
           actions: [
             TextButton(
               onPressed: () {
@@ -144,23 +166,53 @@ class _GamePageState extends State<GamePage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Score', style: TextStyle(fontSize: 20)),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade200,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        _board.score.toString(),
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Score', style: TextStyle(fontSize: 16)),
+                        Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade200,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _board.score.toString(),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        const Text('Best', style: TextStyle(fontSize: 16)),
+                        Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _bestScore.toString(),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
