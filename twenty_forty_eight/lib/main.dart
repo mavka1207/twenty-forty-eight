@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
-import 'game_board.dart';
 import 'dart:math' as math;
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'game_board.dart';
 
 void main() {
   runApp(const TwentyFortyEightApp());
@@ -21,8 +21,9 @@ class TwentyFortyEightApp extends StatelessWidget {
       ),
       home: const GamePage(),
     );
+    }
   }
-}
+
 
 class GamePage extends StatefulWidget {
   const GamePage({super.key});
@@ -34,6 +35,7 @@ class GamePage extends StatefulWidget {
 class _GamePageState extends State<GamePage> {
   late GameBoard _board;
   int _bestScore = 0;
+  bool _isGameOverDialogVisible = false;
 
   static const double _tileSpacing = 8.0;
 
@@ -88,66 +90,56 @@ class _GamePageState extends State<GamePage> {
   }
 
   void _restartGame() {
+    _isGameOverDialogVisible = false;
     setState(() {
       _board.reset();
     });
   }
-
-  void _handleSwipeLeft() {
-    final moved = _board.moveLeft();
-    if (moved) {
-      setState(() {});
-      _checkGameOver();
-    }
+Future<void> _afterMove() async {
+    await _saveBestScoreIfNeeded();
+    if (!mounted) return;
+    setState(() {});
+    _checkGameOver();
   }
 
-  void _handleSwipeRight() {
-    final moved = _board.moveRight();
+  Future<void> _handleMove(bool Function() move) async {
+    final moved = move();
     if (moved) {
-      setState(() {});
-      _checkGameOver();
+      await _afterMove();
+      return;
     }
+  _checkGameOver();
   }
 
-  void _handleSwipeUp() {
-    final moved = _board.moveUp();
-    if (moved) {
-      setState(() {});
-      _checkGameOver();
-    }
-  }
+  Future<void> _handleSwipeLeft() => _handleMove(_board.moveLeft);
+Future<void> _handleSwipeRight() => _handleMove(_board.moveRight);
 
-  void _handleSwipeDown() {
-    final moved = _board.moveDown();
-    if (moved) {
-      setState(() {});
-      _checkGameOver();
-    }
-  }
+  Future<void> _handleSwipeUp() => _handleMove(_board.moveUp);
 
-  void _checkGameOver() async {
-    if (_board.isGameOver()) {
-      await _saveBestScoreIfNeeded();
+  Future<void> _handleSwipeDown() => _handleMove(_board.moveDown);
 
-      if (!mounted) return;
+  void _checkGameOver() {
+    if (_isGameOverDialogVisible || !_board.isGameOver()) return;
 
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Game over'),
-          content: Text('Score: ${_board.score}\nBest: $_bestScore'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _restartGame();
-              },
-              child: const Text('Restart'),
-            ),
-          ],
-        ),
-      );
-    }
+    _isGameOverDialogVisible = true;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Game over'),
+        content: Text('Score: ${_board.score}\nBest: $_bestScore'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _restartGame();
+            },
+            child: const Text('Restart'),
+          ),
+        ],
+      ),
+    ).then((_) {
+      _isGameOverDialogVisible = false;
+    });
   }
 
   Widget _buildBoardBackground(double boardSize, double tileSize) {
@@ -158,13 +150,13 @@ class _GamePageState extends State<GamePage> {
       ),
       padding: const EdgeInsets.all(_tileSpacing),
       child: Column(
-        children: List.generate(GameBoard.size, (row) {
+        children: List.generate(GameBoard.size, (_) {
           return Expanded(
             child: Row(
-              children: List.generate(GameBoard.size, (col) {
+              children: List.generate(GameBoard.size, (_) {
                 return Expanded(
                   child: Container(
-                    margin: EdgeInsets.all(_tileSpacing / 2),
+                    margin: const EdgeInsets.all(_tileSpacing / 2),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade700,
                       borderRadius: BorderRadius.circular(8),
@@ -176,6 +168,7 @@ class _GamePageState extends State<GamePage> {
           );
         }),
       ),
+    
     );
   }
 
@@ -191,7 +184,7 @@ class _GamePageState extends State<GamePage> {
       final tileColor = colors.$1;
       final textColor = colors.$2;
 
-       final bool pop = tile.justMerged || tile.justSpawned;
+       final pop = tile.justMerged || tile.justSpawned;
      
 
       widgets.add(
@@ -237,12 +230,41 @@ class _GamePageState extends State<GamePage> {
 
     return widgets;
   }
+Widget _buildControlButtons() {
+    return Column(
+      children: [
+        IconButton.filled(
+          onPressed: _handleSwipeUp,
+          icon: const Icon(Icons.keyboard_arrow_up),
+        ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton.filled(
+              onPressed: _handleSwipeLeft,
+              icon: const Icon(Icons.keyboard_arrow_left),
+            ),
+            const SizedBox(width: 12),
+            IconButton.filled(
+              onPressed: _handleSwipeRight,
+              icon: const Icon(Icons.keyboard_arrow_right),
+            ),
+          ],
+        ),
+        IconButton.filled(
+          onPressed: _handleSwipeDown,
+          icon: const Icon(Icons.keyboard_arrow_down),
+        ),
+      ],
+   
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final shortestSide = math.min(size.width, size.height);
-    final boardSize = math.max(shortestSide * 0.9, 200.0);
+    final boardSize = math.min(shortestSide * 0.9, 500.0);
     final tileSize = _tileSize(boardSize);
 
     return Scaffold(
@@ -265,92 +287,94 @@ class _GamePageState extends State<GamePage> {
           }
         },
         child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Score + Best
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: SizedBox(
+                    width: boardSize,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Score', style: TextStyle(fontSize: 16)),
-                        Container(
-                          margin: const EdgeInsets.only(top: 4),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.shade200,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            _board.score.toString(),
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Score', style: TextStyle(fontSize: 16)),
+                            Container(
+                              margin: const EdgeInsets.only(top: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.shade200,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _board.score.toString(),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      ],
+                            ],
                     ),
                     Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        const Text('Best', style: TextStyle(fontSize: 16)),
-                        Container(
-                          margin: const EdgeInsets.only(top: 4),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade300,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            _bestScore.toString(),
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            const Text('Best', style: TextStyle(fontSize: 16)),
+                            Container(
+                              margin: const EdgeInsets.only(top: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade300,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _bestScore.toString(),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
+                          
+                        
                       ],
                     ),
                   ],
                 ),
               ),
-
-              // Board
+                ),
               SizedBox(
-                width: boardSize,
-                height: boardSize,
-                child: Stack(
-                  children: [
-                    _buildBoardBackground(boardSize, tileSize),
-                    ..._buildAnimatedTiles(boardSize, tileSize),
-                  ],
+                  width: boardSize,
+                  height: boardSize,
+                  child: Stack(
+                    children: [
+                      _buildBoardBackground(boardSize, tileSize),
+                      ..._buildAnimatedTiles(boardSize, tileSize),
+                    ],
+                  ),
                 ),
-              ),
-
-              const SizedBox(height: 16),
-
-              ElevatedButton(
-                onPressed: _restartGame,
-                child: const Text('Restart'),
-              ),
-            ],
+                const SizedBox(height: 16),
+                _buildControlButtons(),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: _restartGame,
+                  child: const Text('Restart'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    );
+    
+  );
   }
 }
