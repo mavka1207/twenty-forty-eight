@@ -35,6 +35,37 @@ class _GamePageState extends State<GamePage> {
   late GameBoard _board;
   int _bestScore = 0;
 
+  static const double _tileSpacing = 8.0;
+
+  double _tileSize(double boardSize) {
+    final totalSpacing = _tileSpacing * (GameBoard.size + 1);
+    return (boardSize - totalSpacing) / GameBoard.size;
+  }
+
+  (Color, Color) _tileColors(int value) {
+    Color tileColor;
+    Color textColor = Colors.white;
+
+    if (value == 0) {
+      tileColor = Colors.grey.shade700;
+      textColor = Colors.transparent;
+    } else if (value == 2) {
+      tileColor = Colors.orange.shade100;
+      textColor = Colors.black87;
+    } else if (value == 4) {
+      tileColor = Colors.orange.shade200;
+      textColor = Colors.black87;
+    } else if (value <= 16) {
+      tileColor = Colors.orange.shade300;
+    } else if (value <= 64) {
+      tileColor = Colors.orange.shade400;
+    } else {
+      tileColor = Colors.orange.shade600;
+    }
+
+    return (tileColor, textColor);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -120,6 +151,88 @@ class _GamePageState extends State<GamePage> {
         ),
       );
     }
+  }
+
+  Widget _buildBoardBackground(double boardSize, double tileSize) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade800,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.all(_tileSpacing),
+      child: Column(
+        children: List.generate(GameBoard.size, (row) {
+          return Expanded(
+            child: Row(
+              children: List.generate(GameBoard.size, (col) {
+                return Expanded(
+                  child: Container(
+                    margin: EdgeInsets.all(_tileSpacing / 2),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade700,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  List<Widget> _buildAnimatedTiles(double boardSize, double tileSize) {
+    final tiles = <Widget>[];
+
+    for (int r = 0; r < GameBoard.size; r++) {
+      for (int c = 0; c < GameBoard.size; c++) {
+        final value = _board.board[r][c];
+        if (value == 0) continue;
+
+        final left = _tileSpacing + c * (tileSize + _tileSpacing);
+        final top = _tileSpacing + r * (tileSize + _tileSpacing);
+
+        final colors = _tileColors(value);
+        final tileColor = colors.$1;
+        final textColor = colors.$2;
+
+        tiles.add(
+          AnimatedPositioned(
+            key: ValueKey('tile_${r}_$c$value'),
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeInOut,
+            left: left,
+            top: top,
+            width: tileSize,
+            height: tileSize,
+            child: AnimatedScale(
+              duration: const Duration(milliseconds: 120),
+              curve: Curves.easeOut,
+              scale: value >= 8 ? 1.05 : 1.0,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: tileColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Text(
+                    value.toString(),
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    return tiles;
   }
 
   @override
@@ -222,64 +335,11 @@ class _GamePageState extends State<GamePage> {
               SizedBox(
                 width: boardSize,
                 height: boardSize,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade800,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: GridView.builder(
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: GameBoard.size, // 4
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                        ),
-                    itemCount: GameBoard.size * GameBoard.size,
-                    itemBuilder: (context, index) {
-                      final row = index ~/ GameBoard.size;
-                      final col = index % GameBoard.size;
-                      final value = _board.board[row][col];
-
-                      Color tileColor;
-                      Color textColor = Colors.white;
-
-                      if (value == 0) {
-                        tileColor = Colors.grey.shade700;
-                        textColor = Colors.transparent;
-                      } else if (value == 2) {
-                        tileColor = Colors.orange.shade100;
-                        textColor = Colors.black87;
-                      } else if (value == 4) {
-                        tileColor = Colors.orange.shade200;
-                        textColor = Colors.black87;
-                      } else if (value <= 16) {
-                        tileColor = Colors.orange.shade300;
-                      } else if (value <= 64) {
-                        tileColor = Colors.orange.shade400;
-                      } else {
-                        tileColor = Colors.orange.shade600;
-                      }
-
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: tileColor,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Center(
-                          child: Text(
-                            value == 0 ? '' : value.toString(),
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: textColor,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                child: Stack(
+                  children: [
+                    _buildBoardBackground(boardSize, _tileSize(boardSize)),
+                    ..._buildAnimatedTiles(boardSize, _tileSize(boardSize)),
+                  ],
                 ),
               ),
 
