@@ -203,10 +203,17 @@ class _GamePageState extends State<GamePage> {
           top: top,
           width: tileSize,
           height: tileSize,
-          child: AnimatedScale(
+          child: TweenAnimationBuilder<double>(
+            key: ValueKey('scale-${tile.id}-${tile.justMerged}-${tile.justSpawned}'),
+            tween: Tween<double>(begin: pop ? 0.85 : 1.0, end: 1.0),
             duration: const Duration(milliseconds: 160),
             curve: Curves.easeOut,
-            scale: pop ? 1.12 : 1.0,
+            builder: (context, scale, child) {
+              return Transform.scale(
+                scale: scale,
+                child: child,
+              );
+            },
             child: Container(
               decoration: BoxDecoration(
                 color: tileColor,
