@@ -7,6 +7,8 @@ class Tile {
   int col;
   bool justMerged;
   bool justSpawned;
+  double mergeOffsetRow;
+  double mergeOffsetCol;
 
   Tile({
     required this.id,
@@ -15,6 +17,8 @@ class Tile {
     required this.col,
     this.justMerged = false,
     this.justSpawned = false,
+    this.mergeOffsetRow = 0,
+    this.mergeOffsetCol = 0,
   });
 }
 
@@ -73,12 +77,13 @@ class GameBoard {
 
       while (i < lineTiles.length) {
         final current = lineTiles[i];
-        final canMerge =
-            i + 1 < lineTiles.length && lineTiles[i + 1].value == current.value;
+        final canMerge = i + 1 < lineTiles.length &&
+            lineTiles[i + 1].value == current.value;
 
         final target = _targetPosition(line, writeIndex, direction);
 
         if (canMerge) {
+          final consumed = lineTiles[i + 1];
           final mergedValue = current.value * 2;
           score += mergedValue;
           moved = true;
@@ -92,7 +97,9 @@ class GameBoard {
             ..col = target.$2
             ..value = mergedValue
             ..justMerged = true
-            ..justSpawned = false;
+            ..justSpawned = false
+            ..mergeOffsetRow = (consumed.row - target.$1) * 0.20
+            ..mergeOffsetCol = (consumed.col - target.$2) * 0.20;
 
           // Consumed tile disappears after merge (lineTiles[i + 1]).
           newTiles.add(current);
@@ -106,7 +113,9 @@ class GameBoard {
             ..row = target.$1
             ..col = target.$2
             ..justMerged = false
-            ..justSpawned = false;
+            ..justSpawned = false
+            ..mergeOffsetRow = 0
+            ..mergeOffsetCol = 0;
 
           newTiles.add(current);
           i += 1;
@@ -190,6 +199,8 @@ class GameBoard {
     for (final t in tiles) {
       t.justMerged = false;
       t.justSpawned = false;
+      t.mergeOffsetRow = 0;
+      t.mergeOffsetCol = 0;
     }
   }
 
@@ -219,4 +230,3 @@ class GameBoard {
     board[pos.x][pos.y] = value;
   }
 }
-

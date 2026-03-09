@@ -196,35 +196,52 @@ Future<void> _handleSwipeRight() => _handleMove(_board.moveRight);
           top: top,
           width: tileSize,
           height: tileSize,
-          child: TweenAnimationBuilder<double>(
-            key: ValueKey('scale-${tile.id}-${tile.justMerged}-${tile.justSpawned}'),
-            tween: Tween<double>(begin: pop ? 0.85 : 1.0, end: 1.0),
-            duration: const Duration(milliseconds: 160),
+          child: TweenAnimationBuilder<Offset>(
+            key: ValueKey(
+              'merge-shift-${tile.id}-${tile.mergeOffsetRow}-${tile.mergeOffsetCol}-${tile.justMerged}',
+            ),
+            tween: Tween<Offset>(
+              begin: Offset(tile.mergeOffsetCol, tile.mergeOffsetRow),
+              end: Offset.zero,
+            ),
+            duration: const Duration(milliseconds: 120),
             curve: Curves.easeOut,
-            builder: (context, scale, child) {
-              return Transform.scale(
-                scale: scale,
+            builder: (context, shift, child) {
+              return Transform.translate(
+                offset: Offset(
+                  shift.dx * (tileSize + _tileSpacing),
+                  shift.dy * (tileSize + _tileSpacing),
+                ),
                 child: child,
               );
             },
-            child: Container(
-              decoration: BoxDecoration(
-                color: tileColor,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: Text(
-                  value.toString(),
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
+            child: TweenAnimationBuilder<double>(
+              key: ValueKey('scale-${tile.id}-${tile.justMerged}-${tile.justSpawned}'),
+              tween: Tween<double>(begin: pop ? 0.85 : 1.0, end: 1.0),
+              duration: const Duration(milliseconds: 160),
+              curve: Curves.easeOut,
+              builder: (context, scale, child) {
+                return Transform.scale(scale: scale, child: child);
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: tileColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Text(
+                    value.toString(),
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
                   ),
                 ),
               ),
             ),
           ),
         ),
+      ),
       );
     }
 
