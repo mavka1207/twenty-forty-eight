@@ -71,9 +71,6 @@ class _GamePageState extends State<GamePage> {
     super.initState();
     _board = GameBoard();
     _loadBestScore();
-    // GameBoard creates a new board with random tiles in its constructor, so we don't need to call reset() here.
-    // but if we wanted to start with an empty board and then add tiles, we could do:
-    // _board.reset();
   }
 
   Future<void> _loadBestScore() async {
@@ -183,56 +180,55 @@ class _GamePageState extends State<GamePage> {
   }
 
   List<Widget> _buildAnimatedTiles(double boardSize, double tileSize) {
-    final tiles = <Widget>[];
+    final widgets = <Widget>[];
 
-    for (int r = 0; r < GameBoard.size; r++) {
-      for (int c = 0; c < GameBoard.size; c++) {
-        final value = _board.board[r][c];
-        if (value == 0) continue;
+    for (final tile in _board.tiles) {
+      final value = tile.value;
+      final left = _tileSpacing + tile.col * (tileSize + _tileSpacing);
+      final top = _tileSpacing + tile.row * (tileSize + _tileSpacing);
 
-        final left = _tileSpacing + c * (tileSize + _tileSpacing);
-        final top = _tileSpacing + r * (tileSize + _tileSpacing);
+      final colors = _tileColors(value);
+      final tileColor = colors.$1;
+      final textColor = colors.$2;
 
-        final colors = _tileColors(value);
-        final tileColor = colors.$1;
-        final textColor = colors.$2;
+       final bool pop = tile.justMerged || tile.justSpawned;
+     
 
-        tiles.add(
-          AnimatedPositioned(
-            key: ValueKey('tile_${r}_$c$value'),
-            duration: const Duration(milliseconds: 120),
-            curve: Curves.easeInOut,
-            left: left,
-            top: top,
-            width: tileSize,
-            height: tileSize,
-            child: AnimatedScale(
-              duration: const Duration(milliseconds: 120),
-              curve: Curves.easeOut,
-              scale: value >= 8 ? 1.05 : 1.0,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: tileColor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Center(
-                  child: Text(
-                    value.toString(),
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                    ),
+      widgets.add(
+        AnimatedPositioned(
+          key: ValueKey(tile.id),
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          left: left,
+          top: top,
+          width: tileSize,
+          height: tileSize,
+          child: AnimatedScale(
+            duration: const Duration(milliseconds: 160),
+            curve: Curves.easeOut,
+            scale: pop ? 1.12 : 1.0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: tileColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text(
+                  value.toString(),
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
                   ),
                 ),
               ),
             ),
           ),
-        );
-      }
+        ),
+      );
     }
 
-    return tiles;
+    return widgets;
   }
 
   @override
@@ -240,29 +236,24 @@ class _GamePageState extends State<GamePage> {
     final size = MediaQuery.of(context).size;
     final shortestSide = math.min(size.width, size.height);
     final boardSize = math.max(shortestSide * 0.9, 200.0);
+    final tileSize = _tileSize(boardSize);
 
     return Scaffold(
       appBar: AppBar(title: const Text('2048'), centerTitle: true),
       body: GestureDetector(
-        // horizontal swipes
         onHorizontalDragEnd: (details) {
           final velocity = details.primaryVelocity ?? 0;
           if (velocity > 0) {
-            // swipe right
             _handleSwipeRight();
           } else if (velocity < 0) {
-            // swipe left
             _handleSwipeLeft();
           }
         },
-        // vertical swipes
         onVerticalDragEnd: (details) {
           final velocity = details.primaryVelocity ?? 0;
           if (velocity > 0) {
-            // swipe down
             _handleSwipeDown();
           } else if (velocity < 0) {
-            // swipe up
             _handleSwipeUp();
           }
         },
@@ -270,7 +261,7 @@ class _GamePageState extends State<GamePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Score
+              // Score + Best
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -331,21 +322,20 @@ class _GamePageState extends State<GamePage> {
                 ),
               ),
 
-              // Game Board
+              // Board
               SizedBox(
                 width: boardSize,
                 height: boardSize,
                 child: Stack(
                   children: [
-                    _buildBoardBackground(boardSize, _tileSize(boardSize)),
-                    ..._buildAnimatedTiles(boardSize, _tileSize(boardSize)),
+                    _buildBoardBackground(boardSize, tileSize),
+                    ..._buildAnimatedTiles(boardSize, tileSize),
                   ],
                 ),
               ),
 
               const SizedBox(height: 16),
 
-              // Restart
               ElevatedButton(
                 onPressed: _restartGame,
                 child: const Text('Restart'),

@@ -1,5 +1,23 @@
 import 'dart:math';
 
+class Tile {
+  final int id;
+  int value;
+  int row;
+  int col;
+  bool justMerged;
+  bool justSpawned;
+
+  Tile({
+    required this.id,
+    required this.value,
+    required this.row,
+    required this.col,
+    this.justMerged = false,
+    this.justSpawned = false,
+  });
+}
+
 class GameBoard {
   static const int size = 4;
 
@@ -10,26 +28,33 @@ class GameBoard {
 
   int score = 0;
 
+  List<Tile> tiles = [];
+  int _nextId = 0;
+
   GameBoard() {
     reset();
   }
 
   void reset() {
     score = 0;
-    board = List.generate(
-      size,
-      (_) => List.generate(size, (_) => 0),
-    );
+    tiles = [];
+    _nextId = 0;
+    board = List.generate(size, (_) => List.generate(size, (_) => 0));
 
     // 3 or 4 starting tiles (can be changed)
     final startTiles = 3 + _random.nextInt(2); // 3 or 4
     for (int i = 0; i < startTiles; i++) {
       _addRandomTile();
     }
+    rebuildTilesFromBoard();
   }
 
   bool moveLeft() {
+    _clearFlags();
     bool moved = false;
+
+    final previous = board.map((row) => List<int>.from(row)).toList();
+
     for (int row = 0; row < size; row++) {
       final original = List<int>.from(board[row]);
       final mergedRow = _mergeLine(board[row]);
@@ -38,12 +63,19 @@ class GameBoard {
         moved = true;
       }
     }
-    if (moved) _addRandomTile();
+    if (moved) {
+      _addRandomTile();
+      rebuildTilesFromBoard(previousBoard: previous);
+    }
     return moved;
   }
 
   bool moveRight() {
+    _clearFlags();
     bool moved = false;
+
+    final previous = board.map((row) => List<int>.from(row)).toList();
+
     for (int row = 0; row < size; row++) {
       final original = List<int>.from(board[row]);
       final reversed = board[row].reversed.toList();
@@ -54,12 +86,19 @@ class GameBoard {
         moved = true;
       }
     }
-    if (moved) _addRandomTile();
+    if (moved) {
+      _addRandomTile();
+      rebuildTilesFromBoard(previousBoard: previous);
+    }
     return moved;
   }
 
   bool moveUp() {
+    _clearFlags();
     bool moved = false;
+
+    final previous = board.map((row) => List<int>.from(row)).toList();
+
     board = _transpose(board);
     for (int row = 0; row < size; row++) {
       final original = List<int>.from(board[row]);
@@ -70,12 +109,19 @@ class GameBoard {
       }
     }
     board = _transpose(board);
-    if (moved) _addRandomTile();
+    if (moved) {
+      _addRandomTile();
+      rebuildTilesFromBoard(previousBoard: previous);
+    }
     return moved;
   }
 
   bool moveDown() {
+    _clearFlags();
     bool moved = false;
+
+    final previous = board.map((row) => List<int>.from(row)).toList();
+
     board = _transpose(board);
     for (int row = 0; row < size; row++) {
       final original = List<int>.from(board[row]);
@@ -88,7 +134,10 @@ class GameBoard {
       }
     }
     board = _transpose(board);
-    if (moved) _addRandomTile();
+    if (moved) {
+      _addRandomTile();
+      rebuildTilesFromBoard(previousBoard: previous);
+    }
     return moved;
   }
 
@@ -134,6 +183,38 @@ class GameBoard {
     return [...nonZero, ...zeros];
   }
 
+  void rebuildTilesFromBoard({List<List<int>>? previousBoard}) {
+    tiles = [];
+    for (int r = 0; r < size; r++) {
+      for (int c = 0; c < size; c++) {
+        final value = board[r][c];
+        if (value == 0) continue;
+
+        // Detect if tile just spawned (didn't exist at this position before)
+        // If previousBoard is null (reset), all tiles are new
+        final justSpawned = previousBoard == null || previousBoard[r][c] == 0;
+
+        tiles.add(
+          Tile(
+            id: _nextId++,
+            value: value,
+            row: r,
+            col: c,
+            justSpawned: justSpawned,
+            justMerged: false,
+          ),
+        );
+      }
+    }
+  }
+
+  void _clearFlags() {
+    for (final t in tiles) {
+      t.justMerged = false;
+      t.justSpawned = false;
+    }
+  }
+
   void _addRandomTile() {
     final empty = <Point<int>>[];
     for (int r = 0; r < size; r++) {
@@ -146,16 +227,13 @@ class GameBoard {
     if (empty.isEmpty) return;
 
     final pos = empty[_random.nextInt(empty.length)];
-    // 90% — 2, 10% — 4 (can be changed)
     final value = _random.nextDouble() < 0.9 ? 2 : 4;
     board[pos.x][pos.y] = value;
+    // tiles НЕ трогаем — rebuildTilesFromBoard() сделает это сам
   }
 
   List<List<int>> _transpose(List<List<int>> matrix) {
-    final result = List.generate(
-      size,
-      (_) => List<int>.filled(size, 0),
-    );
+    final result = List.generate(size, (_) => List<int>.filled(size, 0));
     for (int r = 0; r < size; r++) {
       for (int c = 0; c < size; c++) {
         result[c][r] = matrix[r][c];
@@ -173,5 +251,3 @@ class GameBoard {
     return true;
   }
 }
-
-
