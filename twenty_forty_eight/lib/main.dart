@@ -124,19 +124,108 @@ Future<void> _handleSwipeRight() => _handleMove(_board.moveRight);
     _isGameOverDialogVisible = true;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Game over'),
-        content: Text('Score: ${_board.score}\nBest: $_bestScore'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _restartGame();
-            },
-            child: const Text('Restart'),
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-        ],
-      ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade100,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    Icons.emoji_events,
+                    color: Colors.orange.shade700,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Game Over',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Try one more time and beat your best!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            const Text('Score'),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${_board.score}',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            const Text('Best'),
+                            const SizedBox(height: 4),
+                            Text(
+                              '$_bestScore',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _restartGame();
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Play Again'),
+                  ),
+                ),
+              ],
+          ),
+         ),
+        );
+      },
     ).then((_) {
       _isGameOverDialogVisible = false;
     });
