@@ -336,31 +336,95 @@ Future<void> _handleSwipeRight() => _handleMove(_board.moveRight);
 
     return widgets;
   }
+
+  static const double _controlButtonSize = 64.0;
+  static const double _controlGap =10.0;
+
+  Widget _directionButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    required String tooltip,
+  }) {
+    return IconButton.filledTonal(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      icon: Icon(icon, size: 34),
+      style: IconButton.styleFrom(
+        minimumSize: const Size(_controlButtonSize, _controlButtonSize),
+        maximumSize: const Size(_controlButtonSize, _controlButtonSize),
+        padding: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+      ),
+    );
+  }
+
 Widget _buildControlButtons() {
+  final padSize = _controlButtonSize * 3 + _controlGap * 2;
     return Column(
       children: [
-        IconButton.filled(
-          onPressed: _handleSwipeUp,
-          icon: const Icon(Icons.keyboard_arrow_up),
+        Text(
+          'Controls',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade700,
+          ),
         ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton.filled(
-              onPressed: _handleSwipeLeft,
-              icon: const Icon(Icons.keyboard_arrow_left),
-            ),
-            const SizedBox(width: 12),
-            IconButton.filled(
-              onPressed: _handleSwipeRight,
-              icon: const Icon(Icons.keyboard_arrow_right),
-            ),
-          ],
+        const SizedBox(height: 10),
+        SizedBox(
+          width: padSize,
+          height: padSize,
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _directionButton(
+                    icon: Icons.keyboard_arrow_up_rounded,
+                    onPressed: _handleSwipeUp,
+                    tooltip: 'Move up',
+                  ),
+                ],
+              ),
+              const SizedBox(height: _controlGap),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _directionButton(
+                    icon: Icons.keyboard_arrow_left_rounded,
+                    onPressed: _handleSwipeLeft,
+                    tooltip: 'Move left',
+                  ),
+                  const SizedBox(width: _controlGap),
+                  const SizedBox(
+                    width: _controlButtonSize,
+                    height: _controlButtonSize,
+                  ),
+                  const SizedBox(width: _controlGap),
+                  _directionButton(
+                    icon: Icons.keyboard_arrow_right_rounded,
+                    onPressed: _handleSwipeRight,
+                    tooltip: 'Move right',
+                  ),
+                ],
+              ),
+              const SizedBox(height: _controlGap),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _directionButton(
+                    icon: Icons.keyboard_arrow_down_rounded,
+                    onPressed: _handleSwipeDown,
+                    tooltip: 'Move down',
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        IconButton.filled(
-          onPressed: _handleSwipeDown,
-          icon: const Icon(Icons.keyboard_arrow_down),
-        ),
+        
       ],
    
     );
