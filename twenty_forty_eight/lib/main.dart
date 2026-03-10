@@ -374,7 +374,49 @@ Widget _buildControlButtons() {
     final tileSize = _tileSize(boardSize);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('2048'), centerTitle: true),
+      appBar: AppBar(
+        centerTitle: false,
+        elevation: 0,
+        titleSpacing: 12,
+        title: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.20),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.grid_4x4_rounded),
+            ),
+            const SizedBox(width: 10),
+            const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '2048',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  'Combine tiles to reach 2048',
+                  style: TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton.filledTonal(
+              tooltip: 'Restart',
+              onPressed: _restartGame,
+              icon: const Icon(Icons.refresh_rounded),
+            ),
+          ),
+        ],
+      ),
       body: GestureDetector(
         onHorizontalDragEnd: (details) {
           final velocity = details.primaryVelocity ?? 0;
@@ -470,11 +512,7 @@ Widget _buildControlButtons() {
                 ),
                 const SizedBox(height: 16),
                 _buildControlButtons(),
-                const SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: _restartGame,
-                  child: const Text('Restart'),
-                ),
+        
               ],
             ),
           ),
