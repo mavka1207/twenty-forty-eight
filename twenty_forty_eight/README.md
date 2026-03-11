@@ -1,17 +1,49 @@
-# twenty_forty_eight
+# 2048 (Flutter)
 
-A new Flutter project.
+A mobile implementation of the **2048** game built with Flutter.
 
-## Getting Started
+## Implemented Features
 
-This project is a starting point for a Flutter application.
+- **4x4** board.
+- **3–4** random tiles at game start.
+- New tiles have values **2** or **4**.
+- Movement in all 4 directions (swipes + control buttons).
+- Merge of equal tiles with doubled value.
+- Current score (**Score**) and best score (**Best**) tracking.
+- Best score persistence via `SharedPreferences`.
+- Movement/merge/spawn animations.
+- `Game Over` dialog + game restart.
 
-A few resources to get you started if this is your first Flutter project:
+## Controls
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+- **Swipe** on the board (up/down/left/right).
+- Use the **D-pad buttons** below the board.
+- Use **Restart** from the AppBar.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Quick Start
+
+### 1. Install dependencies
+
+```bash
+flutter pub get
+```
+
+### 2. Run the app
+
+```bash
+flutter run
+```
+
+> If needed, select a device/emulator with `flutter devices`.
+
+## Project Structure
+
+- `lib/game_board.dart` — game logic (move, merge, spawn, game over).
+- `lib/main.dart` — UI, animations, gesture/button handling, best score.
+
+## Known Limitations
+
+- Board size is currently fixed to 4x4.
+- No dedicated difficulty levels yet.
+- No sound effects.
+
