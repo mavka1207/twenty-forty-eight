@@ -37,6 +37,8 @@ class GameBoard {
   List<Tile> tiles = [];
   int _nextId = 0;
 
+  bool _pendingSpawn = false;
+
   GameBoard() {
     reset();
   }
@@ -51,6 +53,7 @@ class GameBoard {
     for (int i = 0; i < startTiles; i++) {
       _addRandomTile();
     }
+    _pendingSpawn = false;
   }
 
   bool moveLeft() => _move(MoveDirection.left);
@@ -77,8 +80,8 @@ class GameBoard {
 
       while (i < lineTiles.length) {
         final current = lineTiles[i];
-        final canMerge = i + 1 < lineTiles.length &&
-            lineTiles[i + 1].value == current.value;
+        final canMerge =
+            i + 1 < lineTiles.length && lineTiles[i + 1].value == current.value;
 
         final target = _targetPosition(line, writeIndex, direction);
 
@@ -86,7 +89,7 @@ class GameBoard {
           final consumed = lineTiles[i + 1];
           final mergedValue = current.value * 2;
           score += mergedValue;
-          moved = true;
+          // moved = true;
 
           if (current.row != target.$1 || current.col != target.$2) {
             moved = true;
@@ -128,8 +131,17 @@ class GameBoard {
     }
     tiles = newTiles;
     _syncBoardFromTiles();
-    _addRandomTile();
+    // _addRandomTile();
+    _pendingSpawn = true;
     return true;
+  }
+  bool get hasPendingSpawn => _pendingSpawn;
+
+  void applyPendingSpawn() {
+    if (_pendingSpawn) {
+      _addRandomTile();
+      _pendingSpawn = false;
+    }
   }
 
   bool isGameOver() {

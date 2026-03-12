@@ -99,6 +99,13 @@ Future<void> _afterMove() async {
     await _saveBestScoreIfNeeded();
     if (!mounted) return;
     setState(() {});
+    await Future.delayed(const Duration(milliseconds: 220));
+    if (!mounted) return;
+    if (_board.hasPendingSpawn) {
+      setState(() {
+        _board.applyPendingSpawn();
+      });
+    }
     _checkGameOver();
   }
 
@@ -108,6 +115,8 @@ Future<void> _afterMove() async {
       await _afterMove();
       return;
     }
+    if (!mounted) return;
+    setState(() {});
   _checkGameOver();
   }
 
@@ -263,6 +272,8 @@ Future<void> _handleSwipeRight() => _handleMove(_board.moveRight);
 
   List<Widget> _buildAnimatedTiles(double boardSize, double tileSize) {
     final widgets = <Widget>[];
+
+    
 
     for (final tile in _board.tiles) {
       final value = tile.value;
