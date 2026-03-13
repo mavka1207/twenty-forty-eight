@@ -46,4 +46,3 @@ flutter run
 - Board size is currently fixed to 4x4.
 - No dedicated difficulty levels yet.
 - No sound effects.
-
